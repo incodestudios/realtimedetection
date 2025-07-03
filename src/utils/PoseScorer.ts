@@ -15,7 +15,7 @@ export function scorePoseByAngles(
   ref: (Keypoint | undefined)[]
 ): number {
   const joints: [number, number, number][] = [
-    [5, 7, 9],   // left shoulder → elbow → wrist
+    [5, 7, 9],   // left shoulder → elbow → wrist 
     [6, 8, 10],  // right shoulder → elbow → wrist
     [11, 13, 15], // left hip → knee → ankle
     [12, 14, 16]  // right hip → knee → ankle
