@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import dynamic from 'next/dynamic';
 // import type { ReactWebcamProps } from 'react-webcam';
 import * as poseDetection from '@tensorflow-models/pose-detection';
 import { scorePoseSimilarity } from '../utils/PoseScorer';
