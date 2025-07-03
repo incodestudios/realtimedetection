@@ -1,5 +1,4 @@
 'use client'
-import Image from "next/image";
 import RealTimeScoring from "@/components/RealTimeScoring";
 import '@tensorflow/tfjs-backend-webgl';
 
