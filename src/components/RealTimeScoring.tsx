@@ -1,20 +1,21 @@
 import React, { useEffect, useRef, useState } from 'react';
-// import type { ReactWebcamProps } from 'react-webcam';
 import * as poseDetection from '@tensorflow-models/pose-detection';
-import { scorePoseSimilarity } from '../utils/PoseScorer';
+import { scorePoseByAngles } from '../utils/PoseScorer';
+import { drawSkeleton } from '../utils/drawUtils';
 import referenceKeypoints from '../data/squat_demo_keypoints.json';
 import Webcam from 'react-webcam';
-
-/* const Webcam = dynamic(() => import('react-webcam'), {
-  ssr: false,
-}) as React.ComponentType<ReactWebcamProps>; */
-
+import ScoreChart from './ScoreChart';
 
 const MODEL = poseDetection.SupportedModels.MoveNet;
 
 const RealTimeScoring: React.FC = () => {
   const webcamRef = useRef<Webcam | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const webcamCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const videoCanvasRef = useRef<HTMLCanvasElement | null>(null);
+
   const [score, setScore] = useState<number | null>(null);
+  const [scoreHistory, setScoreHistory] = useState<{ time: number; score: number }[]>([]);
   const [detector, setDetector] = useState<poseDetection.PoseDetector | null>(null);
 
   useEffect(() => {
@@ -23,58 +24,87 @@ const RealTimeScoring: React.FC = () => {
         modelType: 'SinglePose.Lightning',
       }).then(setDetector);
     };
-
     init();
   }, []);
 
   useEffect(() => {
-    if (!detector || !webcamRef.current?.video) return;
-
+    if (!detector || !webcamRef.current?.video || !videoRef.current) return;
+  
     const interval = setInterval(async () => {
-      const video = webcamRef.current?.video;
-
-      if (video && video.readyState === 4) {
-        const poses = await detector.estimatePoses(video);
-        if (poses.length > 0) {
-          const liveKeypoints = poses[0].keypoints;
-
-          // Match by current video time
-          const frameIdx = Math.floor(video.currentTime * 5); // assuming 5fps extraction
-          const refFrame = referenceKeypoints[frameIdx];
-
-          if (refFrame) {
-            const liveScore = scorePoseSimilarity(liveKeypoints, refFrame);
-            setScore(liveScore);
-          }
+      const webcamVideo = webcamRef.current?.video as HTMLVideoElement;
+      const referenceVideo = videoRef.current;
+  
+      if (
+        webcamVideo &&
+        referenceVideo &&
+        webcamVideo.readyState === 4 &&
+        referenceVideo.readyState === 4
+      ) {
+        const [livePoses] = await detector.estimatePoses(webcamVideo);
+        const frameIdx = Math.floor(referenceVideo.currentTime * 5);
+        const refKeypoints = referenceKeypoints[frameIdx];
+  
+        if (livePoses?.keypoints && refKeypoints) {
+          const liveScore = scorePoseByAngles(livePoses.keypoints, refKeypoints);
+          setScore(liveScore);
+          setScoreHistory(prev => [...prev.slice(-50), { time: referenceVideo.currentTime, score: liveScore }]);
+  
+          const webcamCtx = webcamCanvasRef.current?.getContext('2d');
+          if (webcamCtx) drawSkeleton(webcamCtx, livePoses.keypoints);
+  
+          const videoCtx = videoCanvasRef.current?.getContext('2d');
+          if (videoCtx) drawSkeleton(videoCtx, refKeypoints);
         }
       }
     }, 200);
-
+  
     return () => clearInterval(interval);
   }, [detector]);
 
   return (
-    <div className="flex flex-col items-center gap-4">
+    <div className="flex flex-col items-center gap-6">
       <h2 className="text-xl font-semibold">Real-Time Movement Scoring</h2>
 
-      <video
-        src="/Video_Request_Single_Leg_Stand.mp4"
-        autoPlay
-        muted
-        loop
-        width={400}
-      />
+      {/* Reference Video with Skeleton Overlay */}
+      <div className="relative w-[640px] h-[480px]">
+        <video
+          ref={videoRef}
+          src="/Video_Request_Single_Leg_Stand.mp4"
+          autoPlay
+          muted
+          loop
+          width={640}
+          height={480}
+          className="rounded"
+        />
+        <canvas
+          ref={videoCanvasRef}
+          className="absolute top-0 left-0 w-full h-full pointer-events-none"
+        />
+      </div>
 
-      <Webcam
-        ref={webcamRef}
-        audio={false}
-        mirrored
-        screenshotFormat="image/jpeg"
-        videoConstraints={{ width: 640, height: 480 }}
-      />
+      {/* Webcam with Skeleton Overlay */}
+      <div className="relative w-[640px] h-[480px]">
+        <Webcam
+          ref={webcamRef}
+          audio={false}
+          mirrored
+          screenshotFormat="image/jpeg"
+          videoConstraints={{ width: 640, height: 480 }}
+          className="rounded"
+        />
+        <canvas
+          ref={webcamCanvasRef}
+          className="absolute top-0 left-0 w-full h-full pointer-events-none"
+        />
+      </div>
 
-      <div className="mt-4 text-2xl font-bold">
+      <div className="text-2xl font-bold">
         Score: {score !== null ? score.toFixed(2) : '...'}
+      </div>
+
+      <div className="w-full max-w-3xl px-4">
+        <ScoreChart data={scoreHistory} />
       </div>
     </div>
   );
