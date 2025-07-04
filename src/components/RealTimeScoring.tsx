@@ -18,54 +18,73 @@ const RealTimeScoring: React.FC = () => {
   const [scoreHistory, setScoreHistory] = useState<{ time: number; score: number }[]>([]);
   const [detector, setDetector] = useState<poseDetection.PoseDetector | null>(null);
 
+  // Load pose detection model once
   useEffect(() => {
     const init = async () => {
-      await poseDetection.createDetector(MODEL, {
+      const detector = await poseDetection.createDetector(MODEL, {
         modelType: 'SinglePose.Lightning',
-      }).then(setDetector);
+      });
+      setDetector(detector);
     };
     init();
   }, []);
 
+  // Start scoring loop after detector is ready
   useEffect(() => {
-    if (!detector || !webcamRef.current?.video || !videoRef.current) return;
-  
-    const interval = setInterval(async () => {
-      const webcamVideo = webcamRef.current?.video as HTMLVideoElement;
+    if (!detector) return;
+
+    const waitForRefs = setInterval(() => {
+      const webcamVideo = webcamRef.current?.video;
       const referenceVideo = videoRef.current;
-  
+
       if (
-        webcamVideo &&
-        referenceVideo &&
-        webcamVideo.readyState === 4 &&
-        referenceVideo.readyState === 4
+        webcamVideo?.readyState === 4 &&
+        referenceVideo?.readyState === 4
       ) {
-        const [livePoses] = await detector.estimatePoses(webcamVideo);
-        const frameIdx = Math.floor(referenceVideo.currentTime * 5);
+        clearInterval(waitForRefs);
+        startScoringLoop();
+      }
+    }, 100);
+
+    const startScoringLoop = () => {
+      const interval = setInterval(async () => {
+        const webcamVideo = webcamRef.current?.video as HTMLVideoElement;
+        const referenceVideo = videoRef.current;
+
+        if (!webcamVideo || !referenceVideo) return;
+
+        const [livePose] = await detector.estimatePoses(webcamVideo);
+        const frameIdx = Math.floor(referenceVideo.currentTime * 5); // assuming 5 FPS
         const refKeypoints = referenceKeypoints[frameIdx];
-  
-        if (livePoses?.keypoints && refKeypoints) {
-          const liveScore = scorePoseByAngles(livePoses.keypoints, refKeypoints);
+
+        if (livePose?.keypoints && refKeypoints) {
+          const liveScore = scorePoseByAngles(livePose.keypoints, refKeypoints);
           setScore(liveScore);
-          setScoreHistory(prev => [...prev.slice(-50), { time: referenceVideo.currentTime, score: liveScore }]);
-  
+          setScoreHistory(prev => [...prev.slice(-50), {
+            time: referenceVideo.currentTime,
+            score: liveScore
+          }]);
+
           const webcamCtx = webcamCanvasRef.current?.getContext('2d');
-          if (webcamCtx) drawSkeleton(webcamCtx, livePoses.keypoints);
-  
+          if (webcamCtx) drawSkeleton(webcamCtx, livePose.keypoints);
+
           const videoCtx = videoCanvasRef.current?.getContext('2d');
           if (videoCtx) drawSkeleton(videoCtx, refKeypoints);
         }
-      }
-    }, 200);
-  
-    return () => clearInterval(interval);
+      }, 200);
+
+      // Cleanup loop
+      return () => clearInterval(interval);
+    };
+
+    return () => clearInterval(waitForRefs);
   }, [detector]);
 
   return (
     <div className="flex flex-col items-center gap-6">
       <h2 className="text-xl font-semibold">Real-Time Movement Scoring</h2>
 
-      {/* Reference Video with Skeleton Overlay */}
+      {/* Reference video with skeleton overlay */}
       <div className="relative w-[640px] h-[480px]">
         <video
           ref={videoRef}
@@ -83,12 +102,12 @@ const RealTimeScoring: React.FC = () => {
         />
       </div>
 
-      {/* Webcam with Skeleton Overlay */}
+      {/* Webcam with skeleton overlay */}
       <div className="relative w-[640px] h-[480px]">
         <Webcam
           ref={webcamRef}
-          audio={false}
           mirrored
+          audio={false}
           screenshotFormat="image/jpeg"
           videoConstraints={{ width: 640, height: 480 }}
           className="rounded"
