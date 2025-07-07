@@ -1,4 +1,6 @@
-import { Keypoint } from '@tensorflow-models/pose-detection';
+import * as poseDetection from '@tensorflow-models/pose-detection';
+
+type Keypoint = poseDetection.Keypoint;
 
 function getAngle(a: Keypoint, b: Keypoint, c: Keypoint): number {
   const ab = [a.x - b.x, a.y - b.y];
