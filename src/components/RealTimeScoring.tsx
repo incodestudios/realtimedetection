@@ -10,10 +10,6 @@ import '@tensorflow/tfjs-backend-webgl';
 
 const MODEL = poseDetection.SupportedModels.MoveNet;
 
-const detector = await poseDetection.createDetector(MODEL, {
-  modelType: 'SinglePose.Lightning'
-});
-
 const RealTimeScoring: React.FC = () => {
   const webcamRef = useRef<Webcam | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
