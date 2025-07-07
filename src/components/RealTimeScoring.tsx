@@ -5,8 +5,14 @@ import { drawSkeleton } from '../utils/drawUtils';
 import referenceKeypoints from '../data/squat_demo_keypoints.json';
 import Webcam from 'react-webcam';
 import ScoreChart from './ScoreChart';
+import * as tf from '@tensorflow/tfjs';
+import '@tensorflow/tfjs-backend-webgl';
 
 const MODEL = poseDetection.SupportedModels.MoveNet;
+
+const detector = await poseDetection.createDetector(MODEL, {
+  modelType: 'SinglePose.Lightning'
+});
 
 const RealTimeScoring: React.FC = () => {
   const webcamRef = useRef<Webcam | null>(null);
@@ -21,11 +27,16 @@ const RealTimeScoring: React.FC = () => {
   // Load pose detection model once
   useEffect(() => {
     const init = async () => {
+      await tf.setBackend('webgl');  // or 'cpu' if needed
+      await tf.ready();
+  
       const detector = await poseDetection.createDetector(MODEL, {
-        modelType: 'SinglePose.Lightning',
+        modelType: 'SinglePose.Lightning' // ✅ no runtime here
       });
+  
       setDetector(detector);
     };
+  
     init();
   }, []);
 
