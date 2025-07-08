@@ -19,20 +19,21 @@ const RealTimeScoring: React.FC = () => {
   const [score, setScore] = useState<number | null>(null);
   const [scoreHistory, setScoreHistory] = useState<{ time: number; score: number }[]>([]);
   const [detector, setDetector] = useState<poseDetection.PoseDetector | null>(null);
+  const [status, setStatus] = useState<'Detecting' | 'Ready'>('Detecting'); // 👈 added status
 
   // Load pose detection model once
   useEffect(() => {
     const init = async () => {
-      await tf.setBackend('webgl');  // or 'cpu' if needed
+      await tf.setBackend('webgl');
       await tf.ready();
-  
+
       const detector = await poseDetection.createDetector(MODEL, {
-        modelType: 'SinglePose.Lightning' // ✅ no runtime here
+        modelType: 'SinglePose.Lightning',
       });
-  
+
       setDetector(detector);
     };
-  
+
     init();
   }, []);
 
@@ -64,23 +65,32 @@ const RealTimeScoring: React.FC = () => {
         const frameIdx = Math.floor(referenceVideo.currentTime * 5); // assuming 5 FPS
         const refKeypoints = referenceKeypoints[frameIdx];
 
-        if (livePose?.keypoints && refKeypoints) {
-          const liveScore = scorePoseByAngles(livePose.keypoints, refKeypoints);
-          setScore(liveScore);
-          setScoreHistory(prev => [...prev.slice(-50), {
-            time: referenceVideo.currentTime,
-            score: liveScore
-          }]);
+        if (livePose?.keypoints) {
+          const validKeypoints = livePose.keypoints.filter(
+            kp => kp.score !== undefined && kp.score > 0.4
+          );
 
-          const webcamCtx = webcamCanvasRef.current?.getContext('2d');
-          if (webcamCtx) drawSkeleton(webcamCtx, livePose.keypoints);
+          setStatus(validKeypoints.length > 5 ? 'Ready' : 'Detecting'); // 👈 update status
 
-          const videoCtx = videoCanvasRef.current?.getContext('2d');
-          if (videoCtx) drawSkeleton(videoCtx, refKeypoints);
+          if (refKeypoints) {
+            const liveScore = scorePoseByAngles(livePose.keypoints, refKeypoints);
+            setScore(liveScore);
+            setScoreHistory(prev => [
+              ...prev.slice(-50),
+              { time: referenceVideo.currentTime, score: liveScore }
+            ]);
+
+            const webcamCtx = webcamCanvasRef.current?.getContext('2d');
+            if (webcamCtx) drawSkeleton(webcamCtx, livePose.keypoints);
+
+            const videoCtx = videoCanvasRef.current?.getContext('2d');
+            if (videoCtx) drawSkeleton(videoCtx, refKeypoints);
+          }
+        } else {
+          setStatus('Detecting');
         }
       }, 200);
 
-      // Cleanup loop
       return () => clearInterval(interval);
     };
 
@@ -123,6 +133,10 @@ const RealTimeScoring: React.FC = () => {
           ref={webcamCanvasRef}
           className="absolute top-0 left-0 w-full h-full pointer-events-none"
         />
+        {/* 👇 Human detection status overlay */}
+        <div className="absolute top-2 left-2 bg-white bg-opacity-80 px-3 py-1 rounded text-black font-semibold text-sm">
+          {status === 'Ready' ? '✅ Ready' : '🔎 Detecting...'}
+        </div>
       </div>
 
       <div className="text-2xl font-bold">
