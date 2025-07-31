@@ -98,55 +98,62 @@ const RealTimeScoring: React.FC = () => {
   }, [detector]);
 
   return (
-    <div className="flex flex-col items-center gap-6">
-      <h2 className="text-xl font-semibold">Real-Time Movement Scoring</h2>
+<div className="flex flex-col items-center gap-6">
+  <h2 className="text-xl font-semibold">Real-Time Movement Scoring</h2>
 
-      {/* Reference video with skeleton overlay */}
-      <div className="relative w-[640px] h-[480px]">
-        <video
-          ref={videoRef}
-          src="/Video_Request_Single_Leg_Stand.mp4"
-          autoPlay
-          muted
-          loop
-          width={640}
-          height={480}
-          className="rounded"
-        />
-        <canvas
-          ref={videoCanvasRef}
-          className="absolute top-0 left-0 w-full h-full pointer-events-none"
-        />
+  {/* Stack video and webcam vertically */}
+  <div className="flex flex-col items-center gap-4 w-full max-w-[640px]">
+
+    {/* Reference video with skeleton overlay */}
+    <div className="relative w-full h-[480px]">
+      <video
+        ref={videoRef}
+        src="/Video_Request_Single_Leg_Stand.mp4"
+        autoPlay
+        muted
+        loop
+        width={640}
+        height={480}
+        className="w-full h-full object-cover rounded"
+      />
+      <canvas
+        ref={videoCanvasRef}
+        className="absolute top-0 left-0 w-full h-full pointer-events-none"
+      />
+    </div>
+
+    {/* Webcam with skeleton overlay */}
+    <div className="relative w-full h-[480px]">
+      <Webcam
+        ref={webcamRef}
+        mirrored
+        audio={false}
+        screenshotFormat="image/jpeg"
+        videoConstraints={{ width: 640, height: 480 }}
+        className="w-full h-full object-cover rounded"
+      />
+      <canvas
+        ref={webcamCanvasRef}
+        className="absolute top-0 left-0 w-full h-full pointer-events-none"
+      />
+
+      {/* Human detection status overlay */}
+      <div className="absolute top-2 left-2 bg-white bg-opacity-80 px-3 py-1 rounded text-black font-semibold text-sm">
+        {status === 'Ready' ? '✅ Ready' : '🔎 Detecting...'}
       </div>
 
-      {/* Webcam with skeleton overlay */}
-      <div className="relative w-[640px] h-[480px]">
-        <Webcam
-          ref={webcamRef}
-          mirrored
-          audio={false}
-          screenshotFormat="image/jpeg"
-          videoConstraints={{ width: 640, height: 480 }}
-          className="rounded"
-        />
-        <canvas
-          ref={webcamCanvasRef}
-          className="absolute top-0 left-0 w-full h-full pointer-events-none"
-        />
-        {/* 👇 Human detection status overlay */}
-        <div className="absolute top-2 left-2 bg-white bg-opacity-80 px-3 py-1 rounded text-black font-semibold text-sm">
-          {status === 'Ready' ? '✅ Ready' : '🔎 Detecting...'}
-        </div>
-      </div>
-
-      <div className="text-2xl font-bold">
+      {/* Score overlay at the bottom center */}
+      <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-80 text-white px-4 py-1 rounded text-lg font-bold">
         Score: {score !== null ? score.toFixed(2) : '...'}
       </div>
-
-      <div className="w-full max-w-3xl px-4">
-        <ScoreChart data={scoreHistory} />
-      </div>
     </div>
+  </div>
+
+  {/* Score history chart */}
+  <div className="w-full max-w-3xl px-4 mt-6">
+    <ScoreChart data={scoreHistory} />
+  </div>
+</div>
   );
 };
 
