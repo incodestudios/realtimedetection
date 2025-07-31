@@ -98,13 +98,14 @@ const RealTimeScoring: React.FC = () => {
   }, [detector]);
 
   return (
-<div className="flex flex-col items-center gap-6">
+  <div className="flex flex-col items-center gap-6 w-full max-w-screen-xl">
   <h2 className="text-xl font-semibold">Real-Time Movement Scoring</h2>
 
-  {/* Side-by-side layout */}
-  <div className="flex flex-col sm:flex-row gap-6 items-center justify-center w-full max-w-6xl">
-    {/* Reference video */}
-    <div className="relative w-[320px] sm:w-[480px] h-[360px] sm:h-[480px]">
+  {/* ⬅️ Video | ➡️ Webcam */}
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-[1100px]">
+    
+    {/* Reference Video */}
+    <div className="relative w-full aspect-video bg-black rounded">
       <video
         ref={videoRef}
         src="/Video_Request_Single_Leg_Stand.mp4"
@@ -119,8 +120,8 @@ const RealTimeScoring: React.FC = () => {
       />
     </div>
 
-    {/* Webcam feed */}
-    <div className="relative w-[320px] sm:w-[480px] h-[360px] sm:h-[480px]">
+    {/* Webcam */}
+    <div className="relative w-full aspect-video bg-black rounded">
       <Webcam
         ref={webcamRef}
         mirrored
@@ -133,18 +134,20 @@ const RealTimeScoring: React.FC = () => {
         ref={webcamCanvasRef}
         className="absolute top-0 left-0 w-full h-full pointer-events-none"
       />
-      {/* Status label */}
+
+      {/* Status badge */}
       <div className="absolute top-2 left-2 bg-white bg-opacity-80 px-3 py-1 rounded text-black font-semibold text-sm">
         {status === 'Ready' ? '✅ Ready' : '🔎 Detecting...'}
       </div>
-      {/* Score overlay bottom center */}
-      <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-80 text-white px-4 py-1 rounded text-lg font-bold">
+
+      {/* Score badge */}
+      <div className="absolute bottom-2 right-2 bg-black bg-opacity-70 text-white px-3 py-1 rounded text-sm font-semibold">
         Score: {score !== null ? score.toFixed(2) : '...'}
       </div>
     </div>
   </div>
 
-  {/* Score chart */}
+  {/* 📈 Score Chart */}
   <div className="w-full max-w-4xl px-4 mt-6">
     <ScoreChart data={scoreHistory} />
   </div>
