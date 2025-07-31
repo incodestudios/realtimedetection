@@ -135,6 +135,10 @@ const RealTimeScoring: React.FC = () => {
           Score: {score !== null ? score.toFixed(2) : '...'}
         </div>
       </div>
+      {/* Floating ScoreChart */}
+      <div className="absolute bottom-4 left-4 w-[300px] h-[150px] bg-white bg-opacity-80 rounded p-2 z-50">
+        <ScoreChart data={scoreHistory} />
+      </div>
     </div>
   );
 };
