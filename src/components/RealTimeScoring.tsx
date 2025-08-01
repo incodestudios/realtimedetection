@@ -6,7 +6,7 @@ import * as tf from '@tensorflow/tfjs';
 import '@tensorflow/tfjs-backend-webgl';
 import Webcam from 'react-webcam';
 import referenceKeypoints from '../data/squat_demo_keypoints.json';
-// import { drawSkeleton } from '../utils/drawUtils';
+import { drawSkeleton } from '../utils/drawUtils';
 import { scorePoseByAngles } from '../utils/PoseScorer';
 import ScoreChart from './ScoreChart';
 
@@ -119,7 +119,7 @@ const RealTimeScoring: React.FC = () => {
             const webcamCtx = webcamCanvasRef.current?.getContext('2d');
             if (webcamCtx) {
               webcamCtx.clearRect(0, 0, webcamCtx.canvas.width, webcamCtx.canvas.height);
-              //drawSkeleton(webcamCtx, livePose.keypoints);
+              drawSkeleton(webcamCtx, livePose.keypoints);
               drawFixedBoundingBox(webcamCtx, boundingBox);
             }
 
