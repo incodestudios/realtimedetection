@@ -12,15 +12,15 @@ import ScoreChart from './ScoreChart';
 
 const MODEL = poseDetection.SupportedModels.MoveNet;
 
-// ✅ Centered bounding box on 640x480 canvas
+// ✅ Fixed green box position on webcam canvas
 const boundingBox = {
-  x: 160, // (640 - 320) / 2
-  y: 60,  // (480 - 360) / 2
+  x: 160, // left
+  y: 60,  // top
   width: 320,
   height: 360,
 };
 
-// ✅ Draw fixed green bounding box
+// ✅ Helper: Draw fixed green bounding box
 function drawFixedBoundingBox(
   ctx: CanvasRenderingContext2D,
   box: { x: number; y: number; width: number; height: number }
@@ -85,6 +85,7 @@ const RealTimeScoring: React.FC = () => {
             (kp) => kp.score !== undefined && kp.score > 0.4
           );
 
+          // ✅ Check if all valid keypoints are inside the fixed box
           const insideBox = validKeypoints.every(
             (kp) =>
               kp.x >= boundingBox.x &&
@@ -112,7 +113,7 @@ const RealTimeScoring: React.FC = () => {
             if (webcamCtx) {
               webcamCtx.clearRect(0, 0, webcamCtx.canvas.width, webcamCtx.canvas.height);
               drawSkeleton(webcamCtx, livePose.keypoints);
-              drawFixedBoundingBox(webcamCtx, boundingBox);
+              drawFixedBoundingBox(webcamCtx, boundingBox); // ✅ always draw fixed box
             }
 
             const videoCtx = videoCanvasRef.current?.getContext('2d');
@@ -135,7 +136,7 @@ const RealTimeScoring: React.FC = () => {
   return (
     <div className="flex w-screen h-screen overflow-hidden">
       {/* Left: Video */}
-      <div className="relative w-[640px] h-[480px] bg-black">
+      <div className="relative flex-1 bg-black">
         <video
           ref={videoRef}
           src="/Video_Request_Single_Leg_Stand.mp4"
@@ -146,14 +147,12 @@ const RealTimeScoring: React.FC = () => {
         />
         <canvas
           ref={videoCanvasRef}
-          width={640}
-          height={480}
-          className="absolute top-0 left-0 pointer-events-none"
+          className="absolute top-0 left-0 w-full h-full pointer-events-none"
         />
       </div>
 
       {/* Right: Webcam */}
-      <div className="relative w-[640px] h-[480px] bg-black">
+      <div className="relative flex-1 bg-black">
         <Webcam
           ref={webcamRef}
           mirrored
@@ -164,33 +163,32 @@ const RealTimeScoring: React.FC = () => {
         />
         <canvas
           ref={webcamCanvasRef}
-          width={640}
-          height={480}
-          className="absolute top-0 left-0 pointer-events-none"
+          className="absolute top-0 left-0 w-full h-full pointer-events-none"
         />
 
-        {/* +2 animation */}
+        {/* ✅ +2 animation */}
         {showPlusTwo && (
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-[64px] font-extrabold text-pink-500 animate-bounce z-50">
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-[64px] font-extrabold text-pink-500 animate-pop">
             +2
           </div>
         )}
 
         {/* Detection status */}
-        <div className="absolute top-2 left-2 bg-white bg-opacity-80 px-3 py-1 rounded text-black font-semibold text-sm z-50">
+        <div className="absolute top-2 left-2 bg-white bg-opacity-80 px-3 py-1 rounded text-black font-semibold text-sm">
           {status === 'Ready' ? '✅ Ready' : '🔎 Detecting...'}
         </div>
 
         {/* Score */}
-        <div className="absolute bottom-2 right-2 bg-black bg-opacity-70 text-white px-3 py-1 rounded text-sm font-semibold z-50">
+        <div className="absolute bottom-2 right-2 bg-black bg-opacity-70 text-white px-3 py-1 rounded text-sm font-semibold">
           Score: {score !== null ? score.toFixed(2) : '...'}
         </div>
       </div>
-
-      {/* Score Chart */}
+      {/* Optional: ScoreChart (can be removed if unused) */}
+      {
       <div className="absolute bottom-4 left-4 w-[300px] h-[150px] bg-white bg-opacity-80 rounded p-2 z-50">
         <ScoreChart data={scoreHistory} />
-      </div>
+      </div> 
+      }
     </div>
   );
 };
