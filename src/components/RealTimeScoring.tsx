@@ -6,7 +6,7 @@ import * as tf from '@tensorflow/tfjs';
 import '@tensorflow/tfjs-backend-webgl';
 import Webcam from 'react-webcam';
 import referenceKeypoints from '../data/squat_demo_keypoints.json';
-import { drawSkeleton } from '../utils/drawUtils';
+// import { drawSkeleton } from '../utils/drawUtils';
 import { scorePoseByAngles } from '../utils/PoseScorer';
 import ScoreChart from './ScoreChart';
 
