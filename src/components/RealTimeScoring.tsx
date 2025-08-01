@@ -119,14 +119,14 @@ const RealTimeScoring: React.FC = () => {
             const webcamCtx = webcamCanvasRef.current?.getContext('2d');
             if (webcamCtx) {
               webcamCtx.clearRect(0, 0, webcamCtx.canvas.width, webcamCtx.canvas.height);
-              drawSkeleton(webcamCtx, livePose.keypoints);
+              //drawSkeleton(webcamCtx, livePose.keypoints);
               drawFixedBoundingBox(webcamCtx, boundingBox);
             }
 
             const videoCtx = videoCanvasRef.current?.getContext('2d');
             if (videoCtx) {
               videoCtx.clearRect(0, 0, videoCtx.canvas.width, videoCtx.canvas.height);
-              drawSkeleton(videoCtx, refKeypoints);
+              //drawSkeleton(videoCtx, refKeypoints);
             }
           }
         } else {
@@ -179,7 +179,7 @@ const RealTimeScoring: React.FC = () => {
 
         {/* +2 */}
         {showPlusTwo && (
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-[64px] font-extrabold text-pink-500 animate-bounce z-50">
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-[164px] font-extrabold text-pink-500 animate-bounce z-50">
             +2
           </div>
         )}
