@@ -12,15 +12,15 @@ import ScoreChart from './ScoreChart';
 
 const MODEL = poseDetection.SupportedModels.MoveNet;
 
-// ✅ Fixed green box position on webcam canvas
+// ✅ Centered bounding box for 640x480 webcam
 const boundingBox = {
-  x: 160, // left
-  y: 60,  // top
+  x: 160, // (640 - 320) / 2
+  y: 60,  // (480 - 360) / 2
   width: 320,
   height: 360,
 };
 
-// ✅ Helper: Draw fixed green bounding box
+// ✅ Helper to draw fixed bounding box
 function drawFixedBoundingBox(
   ctx: CanvasRenderingContext2D,
   box: { x: number; y: number; width: number; height: number }
@@ -85,7 +85,6 @@ const RealTimeScoring: React.FC = () => {
             (kp) => kp.score !== undefined && kp.score > 0.4
           );
 
-          // ✅ Check if all valid keypoints are inside the fixed box
           const insideBox = validKeypoints.every(
             (kp) =>
               kp.x >= boundingBox.x &&
@@ -113,7 +112,7 @@ const RealTimeScoring: React.FC = () => {
             if (webcamCtx) {
               webcamCtx.clearRect(0, 0, webcamCtx.canvas.width, webcamCtx.canvas.height);
               drawSkeleton(webcamCtx, livePose.keypoints);
-              drawFixedBoundingBox(webcamCtx, boundingBox); // ✅ always draw fixed box
+              drawFixedBoundingBox(webcamCtx, boundingBox);
             }
 
             const videoCtx = videoCanvasRef.current?.getContext('2d');
@@ -135,8 +134,8 @@ const RealTimeScoring: React.FC = () => {
 
   return (
     <div className="flex w-screen h-screen overflow-hidden">
-      {/* Left: Video */}
-      <div className="relative flex-1 bg-black">
+      {/* Left: Reference video */}
+      <div className="relative w-[640px] h-[480px] bg-black">
         <video
           ref={videoRef}
           src="/Video_Request_Single_Leg_Stand.mp4"
@@ -147,12 +146,14 @@ const RealTimeScoring: React.FC = () => {
         />
         <canvas
           ref={videoCanvasRef}
-          className="absolute top-0 left-0 w-full h-full pointer-events-none"
+          width={640}
+          height={480}
+          className="absolute top-0 left-0 pointer-events-none"
         />
       </div>
 
-      {/* Right: Webcam */}
-      <div className="relative flex-1 bg-black">
+      {/* Right: Webcam feed */}
+      <div className="relative w-[640px] h-[480px] bg-black">
         <Webcam
           ref={webcamRef}
           mirrored
@@ -163,10 +164,12 @@ const RealTimeScoring: React.FC = () => {
         />
         <canvas
           ref={webcamCanvasRef}
-          className="absolute top-0 left-0 w-full h-full pointer-events-none"
+          width={640}
+          height={480}
+          className="absolute top-0 left-0 pointer-events-none"
         />
 
-        {/* ✅ +2 animation */}
+        {/* +2 Animation */}
         {showPlusTwo && (
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-[64px] font-extrabold text-pink-500 animate-pop">
             +2
