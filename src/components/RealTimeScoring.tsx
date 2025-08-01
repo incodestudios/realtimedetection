@@ -12,15 +12,7 @@ import ScoreChart from './ScoreChart';
 
 const MODEL = poseDetection.SupportedModels.MoveNet;
 
-// ✅ Fixed green box position on webcam canvas
-const boundingBox = {
-  x: 160, // left
-  y: 60,  // top
-  width: 320,
-  height: 360,
-};
-
-// ✅ Helper: Draw fixed green bounding box
+// ✅ Helper to draw a bounding box
 function drawFixedBoundingBox(
   ctx: CanvasRenderingContext2D,
   box: { x: number; y: number; width: number; height: number }
@@ -43,6 +35,7 @@ const RealTimeScoring: React.FC = () => {
   const [detector, setDetector] = useState<poseDetection.PoseDetector | null>(null);
   const [status, setStatus] = useState<'Detecting' | 'Ready'>('Detecting');
   const [showPlusTwo, setShowPlusTwo] = useState(false);
+  const boundingBoxRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
 
   useEffect(() => {
     const init = async () => {
@@ -62,8 +55,22 @@ const RealTimeScoring: React.FC = () => {
     const waitForRefs = setInterval(() => {
       const webcamVideo = webcamRef.current?.video;
       const referenceVideo = videoRef.current;
+      const canvas = webcamCanvasRef.current;
 
-      if (webcamVideo?.readyState === 4 && referenceVideo?.readyState === 4) {
+      if (webcamVideo?.readyState === 4 && referenceVideo?.readyState === 4 && canvas) {
+        const width = canvas.width;
+        const height = canvas.height;
+
+        // ✅ Dynamically center the bounding box (50% center)
+        const boxWidth = 320;
+        const boxHeight = 360;
+        boundingBoxRef.current = {
+          x: (width - boxWidth) / 2,
+          y: (height - boxHeight) / 2,
+          width: boxWidth,
+          height: boxHeight,
+        };
+
         clearInterval(waitForRefs);
         startScoringLoop();
       }
@@ -74,18 +81,18 @@ const RealTimeScoring: React.FC = () => {
         const webcamVideo = webcamRef.current?.video as HTMLVideoElement;
         const referenceVideo = videoRef.current;
 
-        if (!webcamVideo || !referenceVideo) return;
+        if (!webcamVideo || !referenceVideo || !boundingBoxRef.current) return;
 
         const [livePose] = await detector.estimatePoses(webcamVideo);
         const frameIdx = Math.floor(referenceVideo.currentTime * 5);
         const refKeypoints = referenceKeypoints[frameIdx];
+        const boundingBox = boundingBoxRef.current;
 
         if (livePose?.keypoints) {
           const validKeypoints = livePose.keypoints.filter(
             (kp) => kp.score !== undefined && kp.score > 0.4
           );
 
-          // ✅ Check if all valid keypoints are inside the fixed box
           const insideBox = validKeypoints.every(
             (kp) =>
               kp.x >= boundingBox.x &&
@@ -113,7 +120,7 @@ const RealTimeScoring: React.FC = () => {
             if (webcamCtx) {
               webcamCtx.clearRect(0, 0, webcamCtx.canvas.width, webcamCtx.canvas.height);
               drawSkeleton(webcamCtx, livePose.keypoints);
-              drawFixedBoundingBox(webcamCtx, boundingBox); // ✅ always draw fixed box
+              drawFixedBoundingBox(webcamCtx, boundingBox);
             }
 
             const videoCtx = videoCanvasRef.current?.getContext('2d');
@@ -134,9 +141,9 @@ const RealTimeScoring: React.FC = () => {
   }, [detector]);
 
   return (
-    <div className="flex w-screen h-screen overflow-hidden">
+    <div className="flex w-screen h-screen overflow-hidden relative font-sans">
       {/* Left: Video */}
-      <div className="relative flex-1 bg-black">
+      <div className="relative w-1/2 h-full bg-black">
         <video
           ref={videoRef}
           src="/Video_Request_Single_Leg_Stand.mp4"
@@ -147,12 +154,14 @@ const RealTimeScoring: React.FC = () => {
         />
         <canvas
           ref={videoCanvasRef}
+          width={640}
+          height={480}
           className="absolute top-0 left-0 w-full h-full pointer-events-none"
         />
       </div>
 
       {/* Right: Webcam */}
-      <div className="relative flex-1 bg-black">
+      <div className="relative w-1/2 h-full bg-black">
         <Webcam
           ref={webcamRef}
           mirrored
@@ -163,32 +172,33 @@ const RealTimeScoring: React.FC = () => {
         />
         <canvas
           ref={webcamCanvasRef}
+          width={640}
+          height={480}
           className="absolute top-0 left-0 w-full h-full pointer-events-none"
         />
 
-        {/* ✅ +2 animation */}
+        {/* +2 */}
         {showPlusTwo && (
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-[64px] font-extrabold text-pink-500 animate-pop">
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-[64px] font-extrabold text-pink-500 animate-bounce z-50">
             +2
           </div>
         )}
 
-        {/* Detection status */}
-        <div className="absolute top-2 left-2 bg-white bg-opacity-80 px-3 py-1 rounded text-black font-semibold text-sm">
+        {/* Status */}
+        <div className="absolute top-2 left-2 bg-white bg-opacity-80 px-3 py-1 rounded text-black font-semibold text-sm z-50">
           {status === 'Ready' ? '✅ Ready' : '🔎 Detecting...'}
         </div>
 
         {/* Score */}
-        <div className="absolute bottom-2 right-2 bg-black bg-opacity-70 text-white px-3 py-1 rounded text-sm font-semibold">
+        <div className="absolute bottom-2 right-2 bg-black bg-opacity-70 text-white px-3 py-1 rounded text-sm font-semibold z-50">
           Score: {score !== null ? score.toFixed(2) : '...'}
         </div>
       </div>
-      {/* Optional: ScoreChart (can be removed if unused) */}
-      {
+
+      {/* Chart */}
       <div className="absolute bottom-4 left-4 w-[300px] h-[150px] bg-white bg-opacity-80 rounded p-2 z-50">
         <ScoreChart data={scoreHistory} />
-      </div> 
-      }
+      </div>
     </div>
   );
 };
