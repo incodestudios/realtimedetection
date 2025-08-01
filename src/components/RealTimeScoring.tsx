@@ -8,27 +8,26 @@ import Webcam from 'react-webcam';
 import referenceKeypoints from '../data/squat_demo_keypoints.json';
 import { drawSkeleton } from '../utils/drawUtils';
 import { scorePoseByAngles } from '../utils/PoseScorer';
-import ScoreChart from './ScoreChart'; // Optional
 
 const MODEL = poseDetection.SupportedModels.MoveNet;
 
-// ✅ Helper to draw bounding box
-function drawBoundingBox(ctx: CanvasRenderingContext2D, keypoints: poseDetection.Keypoint[]) {
-  const visibleKeypoints = keypoints.filter((kp) => kp.score !== undefined && kp.score > 0.4);
-  if (visibleKeypoints.length === 0) return;
+// ✅ Fixed green box position on webcam canvas
+const boundingBox = {
+  x: 160, // left
+  y: 60,  // top
+  width: 320,
+  height: 360,
+};
 
-  const xCoords = visibleKeypoints.map((kp) => kp.x);
-  const yCoords = visibleKeypoints.map((kp) => kp.y);
-
-  const minX = Math.min(...xCoords);
-  const maxX = Math.max(...xCoords);
-  const minY = Math.min(...yCoords);
-  const maxY = Math.max(...yCoords);
-
+// ✅ Helper: Draw fixed green bounding box
+function drawFixedBoundingBox(
+  ctx: CanvasRenderingContext2D,
+  box: { x: number; y: number; width: number; height: number }
+) {
   ctx.save();
   ctx.strokeStyle = 'lime';
   ctx.lineWidth = 3;
-  ctx.strokeRect(minX, minY, maxX - minX, maxY - minY);
+  ctx.strokeRect(box.x, box.y, box.width, box.height);
   ctx.restore();
 }
 
@@ -42,7 +41,7 @@ const RealTimeScoring: React.FC = () => {
   const [scoreHistory, setScoreHistory] = useState<{ time: number; score: number }[]>([]);
   const [detector, setDetector] = useState<poseDetection.PoseDetector | null>(null);
   const [status, setStatus] = useState<'Detecting' | 'Ready'>('Detecting');
-  const [showPlusTwo, setShowPlusTwo] = useState(false); // ✅ for animation
+  const [showPlusTwo, setShowPlusTwo] = useState(false);
 
   useEffect(() => {
     const init = async () => {
@@ -85,7 +84,16 @@ const RealTimeScoring: React.FC = () => {
             (kp) => kp.score !== undefined && kp.score > 0.4
           );
 
-          setStatus(validKeypoints.length > 5 ? 'Ready' : 'Detecting');
+          // ✅ Check if all valid keypoints are inside the fixed box
+          const insideBox = validKeypoints.every(
+            (kp) =>
+              kp.x >= boundingBox.x &&
+              kp.x <= boundingBox.x + boundingBox.width &&
+              kp.y >= boundingBox.y &&
+              kp.y <= boundingBox.y + boundingBox.height
+          );
+
+          setStatus(insideBox ? 'Ready' : 'Detecting');
 
           if (refKeypoints) {
             const liveScore = scorePoseByAngles(livePose.keypoints, refKeypoints);
@@ -95,7 +103,6 @@ const RealTimeScoring: React.FC = () => {
               { time: referenceVideo.currentTime, score: liveScore },
             ]);
 
-            // ✅ Trigger "+2" if score is good
             if (liveScore >= 80) {
               setShowPlusTwo(true);
               setTimeout(() => setShowPlusTwo(false), 1000);
@@ -105,7 +112,7 @@ const RealTimeScoring: React.FC = () => {
             if (webcamCtx) {
               webcamCtx.clearRect(0, 0, webcamCtx.canvas.width, webcamCtx.canvas.height);
               drawSkeleton(webcamCtx, livePose.keypoints);
-              drawBoundingBox(webcamCtx, livePose.keypoints);
+              drawFixedBoundingBox(webcamCtx, boundingBox); // ✅ always draw fixed box
             }
 
             const videoCtx = videoCanvasRef.current?.getContext('2d');
@@ -158,7 +165,7 @@ const RealTimeScoring: React.FC = () => {
           className="absolute top-0 left-0 w-full h-full pointer-events-none"
         />
 
-        {/* ✅ +2 Animation */}
+        {/* ✅ +2 animation */}
         {showPlusTwo && (
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-[64px] font-extrabold text-pink-500 animate-pop">
             +2
@@ -175,10 +182,6 @@ const RealTimeScoring: React.FC = () => {
           Score: {score !== null ? score.toFixed(2) : '...'}
         </div>
       </div>
-      {/* Optional: ScoreChart (can be removed if unused) */}
-        <div className="absolute bottom-4 left-4 w-[300px] h-[150px] bg-white bg-opacity-80 rounded p-2 z-50">
-          <ScoreChart data={scoreHistory} />
-        </div> 
     </div>
   );
 };
