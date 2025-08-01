@@ -8,6 +8,7 @@ import Webcam from 'react-webcam';
 import referenceKeypoints from '../data/squat_demo_keypoints.json';
 import { drawSkeleton } from '../utils/drawUtils';
 import { scorePoseByAngles } from '../utils/PoseScorer';
+import ScoreChart from './ScoreChart';
 
 const MODEL = poseDetection.SupportedModels.MoveNet;
 
@@ -182,6 +183,12 @@ const RealTimeScoring: React.FC = () => {
           Score: {score !== null ? score.toFixed(2) : '...'}
         </div>
       </div>
+      {/* Optional: ScoreChart (can be removed if unused) */}
+      {
+      <div className="absolute bottom-4 left-4 w-[300px] h-[150px] bg-white bg-opacity-80 rounded p-2 z-50">
+        <ScoreChart data={scoreHistory} />
+      </div> 
+      }
     </div>
   );
 };
