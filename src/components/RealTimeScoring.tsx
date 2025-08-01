@@ -12,7 +12,7 @@ import ScoreChart from './ScoreChart';
 
 const MODEL = poseDetection.SupportedModels.MoveNet;
 
-// ✅ Centered bounding box for 640x480 webcam
+// ✅ Centered bounding box on 640x480 canvas
 const boundingBox = {
   x: 160, // (640 - 320) / 2
   y: 60,  // (480 - 360) / 2
@@ -20,7 +20,7 @@ const boundingBox = {
   height: 360,
 };
 
-// ✅ Helper to draw fixed bounding box
+// ✅ Draw fixed green bounding box
 function drawFixedBoundingBox(
   ctx: CanvasRenderingContext2D,
   box: { x: number; y: number; width: number; height: number }
@@ -134,7 +134,7 @@ const RealTimeScoring: React.FC = () => {
 
   return (
     <div className="flex w-screen h-screen overflow-hidden">
-      {/* Left: Reference video */}
+      {/* Left: Video */}
       <div className="relative w-[640px] h-[480px] bg-black">
         <video
           ref={videoRef}
@@ -152,7 +152,7 @@ const RealTimeScoring: React.FC = () => {
         />
       </div>
 
-      {/* Right: Webcam feed */}
+      {/* Right: Webcam */}
       <div className="relative w-[640px] h-[480px] bg-black">
         <Webcam
           ref={webcamRef}
@@ -169,29 +169,28 @@ const RealTimeScoring: React.FC = () => {
           className="absolute top-0 left-0 pointer-events-none"
         />
 
-        {/* +2 Animation */}
+        {/* +2 animation */}
         {showPlusTwo && (
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-[64px] font-extrabold text-pink-500 animate-pop">
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-[64px] font-extrabold text-pink-500 animate-bounce z-50">
             +2
           </div>
         )}
 
         {/* Detection status */}
-        <div className="absolute top-2 left-2 bg-white bg-opacity-80 px-3 py-1 rounded text-black font-semibold text-sm">
+        <div className="absolute top-2 left-2 bg-white bg-opacity-80 px-3 py-1 rounded text-black font-semibold text-sm z-50">
           {status === 'Ready' ? '✅ Ready' : '🔎 Detecting...'}
         </div>
 
         {/* Score */}
-        <div className="absolute bottom-2 right-2 bg-black bg-opacity-70 text-white px-3 py-1 rounded text-sm font-semibold">
+        <div className="absolute bottom-2 right-2 bg-black bg-opacity-70 text-white px-3 py-1 rounded text-sm font-semibold z-50">
           Score: {score !== null ? score.toFixed(2) : '...'}
         </div>
       </div>
-      {/* Optional: ScoreChart (can be removed if unused) */}
-      {
+
+      {/* Score Chart */}
       <div className="absolute bottom-4 left-4 w-[300px] h-[150px] bg-white bg-opacity-80 rounded p-2 z-50">
         <ScoreChart data={scoreHistory} />
-      </div> 
-      }
+      </div>
     </div>
   );
 };
